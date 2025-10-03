@@ -1,0 +1,379 @@
+inter-Vlan(A switch and router)
+*** A switch connected to many computers
+*** A router is connected to the switch or the switch is connected to a router
+
+#switch
+
+> enable
+> configure terminal
+
+> vlan 10
+> name Sales
+> exit
+
+> vlan 20
+> name HR
+> exit
+
+> vlan 30
+> name IT
+> exit
+
+#configure assigned ports of pcs connected to switch
+
+> interface range fa0/1-2
+> switchport mode access
+> switchport access vlan 10
+> exit
+
+
+> interface range fa0/3-4
+> switchport mode access
+> switchport access vlan 20
+> exit
+
+> interface range fa0/5-6
+> switchport mode access
+> switchport access vlan 30
+> exit
+
+
+
+
+configure the port of the switch connected to router on the switch(S0)
+
+> interface fa0/4
+> switchport mode trunk
+> exit
+
+configure the router(R0) for inter-vlans(10,20,30) communications
+
+
+> interface g0/0.10
+> encapsulation dot1Q 10
+> ip address 192.168.10.1 255.255.255.0
+> exit
+
+
+> interface g0/0.20
+> encapsulation dot1Q 20
+> ip address 192.168.20.1 255.255.255.0
+> exit
+
+
+> interface g0/0.30
+> encapsulation dot1Q 30
+> ip address 192.168.30.1 255.255.255.0
+> exit
+
+ 
+configure DHCPS pools on router(to get automatic IPS)
+
+> ip dhcp pool vlan 10
+> network 192.168.10.0 255.255.255.0
+> default-router 192.168.10.1
+> exit
+
+> ip dhcp pool vlan 20
+> network 192.168.20.0 255.255.255.0
+> default-router 192.168.20.1
+> exit
+
+
+> ip dhcp pool vlan 30
+> network 192.168.30.0 255.255.255.0
+> default-router 192.168.30.1
+> exit
+
+
+
+
+
+
+configure VTP Domain
+
+server switch-(switch 0)
+
+> enable
+> configure terminal
+> vtp mode server
+> vtp domain NetworkLab
+> vtp password cisco123
+> exit
+> vlan 10
+> name sales
+> exit
+> vlan 20
+> name IT
+> exit
+> vlan 30
+> name HR
+> exit
+
+client Switches(S1-S4)
+
+> enable 
+> configure terminal
+> vtp mode client 
+> vtp domain NetworkLab
+> vtp password cisco123
+> exit
+
+
+
+assign vlans to switch computer ports
+
+S1(PC1 & PC2)
+
+>interface range fa0/1-2
+>switchport mode access
+>switchport access vlan 10
+>exit
+
+s2(pc1 &PC2)
+> interface range fa0/1-2
+> switchport mode access 
+> switchport access vlan 20
+> exit
+
+....(S3,S4,S0)
+
+Trunk switches(port connecting switches)
+
+#s1(switch-1)
+> interface fa0/3
+> switchport mode trunk
+
+>interface fa0/4
+>switchport mode trunk
+ 
+#s2(switch-2)
+> interface fa0/4
+> switchport mode trunk
+
+> interface fa0/3
+> switchport mode trunk
+
+....(s3.s4)
+
+
+Trunk port: switch port-number toward the router(switch-0)
+
+> interface fa0/3
+> switchport mode trunk
+> switchport trunk encapsulation dot1q
+> exit
+
+
+verify Vtp configuration
+
+s1# >show vtp status
+s1#> show vlan brief
+s1#> show interfaces trunk
+
+(s2..s4)
+
+ ***configuration on router for inter-vlan communication
+
+subinterface for vlan10
+
+> enable
+> configure terminal
+> interface g0/0.10
+> encapsulation dot1Q 10
+> ip address 192.168.10.1 255.255.255.0
+> exit
+
+
+subinterface for vlan20
+
+> enable
+> configure terminal
+> interface g0/0.20
+> encapsulation dot1Q 20
+> ip address 192.168.20.1 255.255.255.0
+> exit
+
+
+subinterface for vlan30
+
+> enable
+> configure terminal
+> interface g0/0.30
+> encapsulation dot1Q 30
+> ip address 192.168.30.1 255.255.255.0
+> exit
+
+configure DHCPS pools also on router(to get automatic IPS)
+
+> ip dhcp pool vlan 10
+> network 192.168.10.0 255.255.255.0
+> default-router 192.168.10.1
+> exit
+
+> ip dhcp pool vlan 20
+> network 192.168.20.0 255.255.255.0
+> default-router 192.168.20.1
+> exit
+
+
+> ip dhcp pool vlan 30
+> network 192.168.30.0 255.255.255.0
+> default-router 192.168.30.1
+> exit
+
+
+
+how to configure two routers connected to each other and  two switches each connected to each router and each switch connect to 2 computers
+
+
+R1
+==
+enable
+confi t
+int gi0/0
+ip add 192.168.10.1 255.255.255.0
+no shut
+int gi0/2
+ip add 192.168.20.1 255.255.255.128
+no shut
+int gi0/1
+ip add 10.10.10.1 255.255.255.252
+no shut
+
+
+R2
+===
+enable
+config t
+int gi0/0
+ip add 10.10.10.2 255.255.255.252
+no shut
+int gi0/1
+ip add 192.168.30.1 255.255.255.192
+no shut
+int gi0/2
+ip add 192.168.40.1 255.255.255.224 
+no shut
+
+
+
+R1
+==
+
+router eigrp 100
+network 192.168.10.0 0.0.0.255
+network 192.168.20.0 0.0.0.127
+network 10.10.10.0 0.0.0.3
+
+R2
+==
+router eigrp 100
+network 192.168.30.0 0.0.0.63
+network 192.168.40.0 0.0.0.31
+network 10.10.10.0 0.0.0.3
+
+
+how to configure ospf-router
+
+
+enable 
+config t
+int gi0/0
+ip add 10.10.10.1 255.255.255.252
+no shut
+int gi0/1
+ip add 192.168.30.1 255.255.255.224
+no shut
+
+
+R2
+===
+enable 
+config t
+int gi0/0
+ip add 10.10.10.2 255.255.255.252
+no shut
+int gi0/1
+ip add 20.20.20.1 255.255.255.252
+no shut
+int gi0/2
+ip add 30.30.30.1 255.255.255.252
+no shut
+R3
+==
+
+enable
+config t
+int gi0/0
+ip add 20.20.20.2 255.255.255.252
+no shut
+int gi0/1
+ip add 40.40.40.1 255.255.255.252
+no shut
+int gi0/2
+ip add 192.168.10.1 255.255.255.0
+no shut
+
+
+R4
+===
+enable
+config t
+int gi0/0/1
+ip add 40.40.40.2 255.255.255.252
+no shut
+int gi0/0/0
+ip add 30.30.30.2 255.255.255.252
+no shut
+int gi0/0/2
+ip add 192.168.20.1 255.255.255.128
+no shut
+
+router ospf 10
+router-id 1.1.1.1
+network 10.10.10.0 0.0.0.3 area 0
+network 192.168.30.0 0.0.0.31 area 0
+
+
+router ospf 10
+router-id 2.2.2.2
+network 10.10.10.0  0.0.0.3 area 0
+network 20.20.20.0 0.0.0.3 area 10
+network 30.30.30.0 0.0.0.3 area 10
+
+
+router ospf 10
+router-id 3.3.3.3
+network 20.20.20.0 0.0.0.3 area 10
+network 40.40.40.0 0.0.0.3 area 10
+network 192.168.10.0 0.0.0.255 area 10
+
+router ospf 10
+router-id 4.4.4.4
+network 30.30.30.0 0.0.0.3 area 10
+network 40.40.40.0 0.0.0.3 area 10
+network 192.168.20.0 0.0.0.127 area 10
+
+how to configure bgp
+
+
+router bgp 100
+bgp router-id 1.1.1.1
+neighbor 10.10.10.2 remote-as 200 
+network 10.10.10.0 mask 255.255.255.0
+network 192.168.10.0 mask 255.255.255.128
+
+
+router bgp 200
+bgp router-id 2.2.2.2
+neighbor 10.10.10.1 remote-as 100 
+network 10.10.10.0 mask 255.255.255.0
+network 192.168.20.0 mask 255.255.255.0
+
+
+
+
+
+
+
