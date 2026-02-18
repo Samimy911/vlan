@@ -1,3 +1,82 @@
+– 
+
+Vlan(A switch connected to many computers)
+*** A switch connected to many computers
+*** A router is connected to the switch or the switch is connected to a router
+
+#switch
+
+> enable
+> configure terminal
+> Hostname             (changing hostname if u want)
+> enable password 1234 (Press ex-> x2 to see the implementation of the passsword)
+
+ #Creating vlans(switch only)
+
+> vlan 10
+> name Sales
+> exit
+
+> vlan 20
+> name HR
+> exit
+
+> vlan 30
+> name IT
+> exit
+
+
+>do show vlan
+>show vlan brief
+
+#configure assigned ports of pcs connected to switch/
+#Assigning Interface on VLANS
+
+
+
+
+> interface range fa0/1-2
+> switchport mode access
+> switchport access vlan 10
+> exit
+
+
+> interface range fa0/3-4
+> switchport mode access
+> switchport access vlan 20
+> exit
+
+> interface range fa0/5-6
+> switchport mode access
+> switchport access vlan 30
+> exit
+
+
+#Assigning Ip addresses on VLANS
+
+> Interface Vlan 10
+> Ip address 10.10.10.1 255.255.255.0
+> Exit
+
+> do show ip interface brief (show the ip implementation-during encapsulation on router...)
+>show cap neighbors -> see which switch and port are connected to your local part(can be used on switch to find ports if they are invisible)
+
+
+# use make an error in configuration like you wanted to do:
+> (int range fa0/1-8 but u Did int range fa0/1-10, u can just rename to initial
+> int range fa0/1-8 it works)
+
+Configuring something like(fa1/1, fa2/1, fa3/1, fa4/1, fa5/1)
+
+> Int fa1/1 -fa5/1(right way to do it)
+
+
+
+
+
+
+
+
 inter-Vlan(A switch and router)
 *** A switch connected to many computers
 *** A router is connected to the switch or the switch is connected to a router
@@ -40,11 +119,20 @@ inter-Vlan(A switch and router)
 
 
 
-configure the port of the switch connected to router on the switch(S0)
+configure the port of the switch connected to a switch(S0)
 
 > interface fa0/4
-> switchport mode trunk
+> switchport mode trunk(no restriction at all, all vlans can communicate)
+> switchport trunk allowed vlan 10,20,....(for specify vlan-restricted for security purposes)
+> show interfaces trunk
 > exit
+
+
+
+
+
+        
+
 
 configure the router(R0) for inter-vlans(10,20,30) communications
 
@@ -65,6 +153,59 @@ configure the router(R0) for inter-vlans(10,20,30) communications
 > encapsulation dot1Q 30
 > ip address 192.168.30.1 255.255.255.0
 > exit
+
+**** let say u make a mistake by assigning the wrong interface, u correct ur mistake by typing
+
+>no interface fa0/3-> if u wan to remove that interface
+ 
+
+                      Layer 3-switch
+
+ Instead of router, we can use a layer 3 switch to talk to different vlans in different regions each on single switch 
+
+#create all the vlans again on the SVI Switch(layer_3)
+
+>enable
+>config t
+>ip routing
+
+>vlan 10
+> name SALES
+
+>vlan 20
+> name ENGINEERING
+> exit
+
+>vlan 30
+>name HR
+>exit
+
+
+#if it allow u might be able configured trunk mode because trunk mode here is Auto
+
+>interface fa0/1..
+>switchport mode trunk -> allows a vlans
+>switchport trunk allowed van 10,20,30 (vlans u dont want might not be written)
+
+#Assigning Ips (Its like in router also but we don't need encapsulation here because it a (layer 3-Switch))
+
+>interface vlan 10
+> ip address 192.168.10.1 255.255.255.0
+> no shut
+>exit
+
+
+>interface vlan 20
+>ip address 192.168.20.1 255.255.255.0
+>no shutdown
+>exit
+
+>interface vlan 30
+>ip address 192.168.30.1 255.255.255.0
+>no shutdown
+>exit
+
+
 
  
 configure DHCPS pools on router(to get automatic IPS)
@@ -159,7 +300,7 @@ Trunk switches(port connecting switches)
 
 Trunk port: switch port-number toward the router(switch-0)
 
-> interface fa0/3
+> interface fa0/3 -> this depends on the interface in which the router is connected to
 > switchport mode trunk
 > switchport trunk encapsulation dot1q
 > exit
@@ -226,7 +367,7 @@ configure DHCPS pools also on router(to get automatic IPS)
 
 how to configure two routers connected to each other and  two switches each connected to each router and each switch connect to 2 computers
 
-
+Configuring ips on a router 
 R1
 ==
 enable
@@ -255,6 +396,54 @@ no shut
 int gi0/2
 ip add 192.168.40.1 255.255.255.224 
 no shut
+
+Configuring dynamic routing(RIP)
+
+(On the left router / first router)
+
+> enable
+> configure terminal
+
+> interface fa0/0
+> ip address 192.168.10.1 255.255.255.0
+> no shutdown
+
+> interface se2/0
+> ip address 192.168.30.1 255.255.255.252
+> clock rate 64000      ← ONLY if this side is DCE
+> no shutdown
+
+
+>router rip
+> version 2
+>no auto-summary
+>network 192.168.10.0
+>network 192.168.30.0
+
+
+(On the right router/second router)
+
+
+>enable
+>configure terminal
+
+>interface fa0/0
+>ip address 192.168.20.1 255.255.255.0
+> no shutdown
+
+>interface se2/0
+>ip address 192.168.30.2 255.255.255.252
+>no shutdown
+
+(On right side router)
+>router rip
+>version 2
+> no auto-summary
+>network 192.168.20.0
+>network 192.168.30.0
+
+>show ip route
+
 
 
 
@@ -374,6 +563,82 @@ network 192.168.20.0 mask 255.255.255.0
 
 
 
+Do show controller serial 2/0
+Int se2/0
+Clock rate 6400
+
+How to configure telnet
+
+Router(config-if)#ip add 192.168.1.1 255.255.255.0
+Router(config-if)#hostname telnet 
+telnet(config)#enable password Cisco
+telnet(config)#ip domain-name Cisco.com
+telnet(config)#username ADMIN password Cisco1
+telnet(config)#LINE VTY 0 15
+telnet(config-line)#
+telnet(config-line)#transport input Telnet
+telnet(config-line)#login local 
+telnet(config-line)#Exit 
+telnet(config)#do wr
+
+Pc command (Telnet)
+
+C:\>telnet 192.168.1.1
+Trying 192.168.1.1 ...Open
+
+
+User Access Verification
+
+Username: ADMIN
+Password: Cisco1
+telnet>en
+Password:Cisco 
+telnet#en
+telnet#config t
+Enter configuration commands, one per line.  End with CNTL/Z.
+telnet(config)#Hostname R10-telenet 
+R10-telenet(config)#enable password cisco3
+R10-telenet(config)#
 
 
 
+Router(config-if)#exit
+Router(config)#hostname R1-Telnet
+R1-Telnet(config)#enable password cisco
+R1-Telnet(config)#ip domain-name cisco.com
+R1-Telnet(config)#username Guest password guest123
+R1-Telnet(config)#line vty 0 15
+R1-Telnet(config-line)#
+R1-Telnet(config-line)#transport input telnet
+R1-Telnet(config-line)#login local
+R1-Telnet(config-line)#exit
+
+            
+Restriction of network on telnet
+	
+R1-Telnet(config)#access-list 10 permit 192.168.10.0 0.0.0.255
+R1-Telnet(config)#line vty 0 15
+R1-Telnet(config-line)#access-class 10 in 
+R1-Telnet(config-line)#exit
+
+
+
+
+ssh configuration
+Router(config)#hostname R1-55H
+R1-SSH (config)#enable password Cisco
+R1-SSH(config)#ip domain-name cisco.com
+R1-SSH(config) #username ADMIN PASSWORD
+Cisco1
+R1-SSH(config)#crypto key generate rsa
+1024
+R1-SSH(config)#ip ssh version 2
+*Mar 1 0:11:37.351: %SSH-5-ENABLED: SSH
+1.99 has been enabled
+R1-SSH(config line vty 015
+R1-SSH(config-line)#transport input ssh
+R1-SSH(config-line)#login local
+R1-SSH(config-line)#exit
+R1-SSH(config)#do wr
+Ln 454, Col 21 7.315 chara Plaint 100%
+Wing UTF-8
