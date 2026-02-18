@@ -642,3 +642,49 @@ R1-SSH(config-line)#exit
 R1-SSH(config)#do wr
 Ln 454, Col 21 7.315 chara Plaint 100%
 Wing UTF-8
+
+
+Rip with protocol
+
+
+
+RouterA(config)# router rip
+RouterA(config-router)# version 2
+RouterA(config-router)# no auto-summary
+
+RouterA(config-router)# network 192.168.10.0
+RouterA(config-router)# network 192.168.20.0
+RouterA(config-router)# network 192.168.30.0
+
+#prevents loops 
+RouterB(config-router)# passive-interface default
+RouterB(config-router)# no passive-interface <router-to-router-interface>
+
+#ensure correct subnets are propagated 
+
+RouterA(config)# interface <router-to-router-interface>
+RouterA(config-if)# ip summary-address rip 192.168.0.0 255.255.224.0 (if it works)
+
+Alternative to ensure correct subnets are propagated 
+
+RouterA(config)# access-list 1 permit 192.168.10.0 0.0.0.255
+RouterA(config)# access-list 1 permit 192.168.20.0 0.0.0.255
+RouterA(config)# access-list 1 permit 192.168.30.0 0.0.0.255
+
+Apply Acl to rip update 
+
+RouterA(config)# router rip
+RouterA(config-router)# distribute-list 1 out <router-to-router-interface>
+
+Optimize hop count 
+
+Method 1: Offset-List (Path Preference)
+
+RouterA(config)# access-list 5 permit 192.168.40.0 0.0.0.255
+RouterA(config)# router rip
+RouterA(config-router)# offset-list 5 out 1 <router-to-router-interface>
+
+Method 2: Optimize RIP Timers(alternative)
+
+Router(config)# router rip
+Router(config-router)# timers basic 30 180 180 240
